@@ -5,8 +5,16 @@ import { useMedia } from "react-use";
 import { usePathname, useRouter } from "next/navigation";
 
 import NavButton from "@/components/nav-button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 import { Menu } from "lucide-react";
 
@@ -58,6 +66,12 @@ const Navigation = () => {
           </Button>
         </SheetTrigger>
         <SheetContent side="left" className="px-2">
+          <VisuallyHidden>
+            <SheetHeader>
+              <SheetTitle>Menu Icon</SheetTitle>
+              <SheetDescription>Menu Icon</SheetDescription>
+            </SheetHeader>
+          </VisuallyHidden>
           <nav className=" flex flex-col gap-y-2 pt-6">
             {routes.map((route) => (
               <Button

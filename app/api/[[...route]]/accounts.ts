@@ -1,11 +1,13 @@
+import {z} from "zod"
 import { Hono } from "hono";
-import { eq } from "drizzle-orm";
+import { eq,and,inArray } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 
 import { db } from "@/db/drizzle";
 import { accounts, insertAccountSchema } from "@/db/schema";
 
 import { v4 as uuidv4 } from "uuid";
+
 
 //import { HTTPException } from "hono/http-exception";
 
@@ -47,6 +49,38 @@ const app = new Hono()
         .returning();
       return c.json({data});
     }
-  );
+  ).post(
+    "/bulk-delete",
+    zValidator("json",
+      // add middleware
+      z.object({
+      ids: z.array(z.string())
+    })),
+    async (c) => {
+      //const auth = getAuth(c)
+      
+      const values = c.req.valid("json");
+
+      /* if(!auth.userId) {
+      return c.json({error:"Unauthorized"},401)}
+      
+      */ 
+      
+      const data = await db
+        .delete(accounts)
+        .where(
+          and(
+            eq(
+              accounts.userId,"1"
+            ),
+            inArray(accounts.id,values.ids)
+          )
+        ).returning({
+          id:accounts.id
+        })
+
+      return c.json({ data });
+    }
+  )
 
 export default app;
