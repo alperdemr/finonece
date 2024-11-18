@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/providers/query-provier";
-import { SheetProvider } from "@/features/accounts/components/sheet-provider";
+import { SheetProvider } from "@/providers/sheet-provider";
 
 import "./globals.css";
 

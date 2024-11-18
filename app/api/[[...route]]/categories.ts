@@ -4,13 +4,13 @@ import { eq, and, inArray } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 
 import { db } from "@/db/drizzle";
-import { accounts, insertAccountSchema } from "@/db/schema";
+import { categories, insertCategorySchema } from "@/db/schema";
 
 import { v4 as uuidv4 } from "uuid";
 
 //import { HTTPException } from "hono/http-exception";
 
-// add auth for get accounts,
+// add auth for get categories,
 
 const app = new Hono()
   .get("/", async (c) => {
@@ -19,10 +19,10 @@ const app = new Hono()
     // with httpexception throw new HTTPException(401,{res:c.json({error:"Unauthorized"},401)})
     const data = await db
       .select({
-        id: accounts.id,
-        name: accounts.name,
+        id: categories.id,
+        name: categories.name,
       })
-      .from(accounts);
+      .from(categories);
     //.where(eq(accounts.userId,auth.userId))
     return c.json({ data });
   })
@@ -47,11 +47,11 @@ const app = new Hono()
     */
       const [data] = await db
         .select({
-          id: accounts.id,
-          name: accounts.name,
+          id: categories.id,
+          name: categories.name,
         })
-        .from(accounts)
-        .where(and(eq(accounts.userId, "1"), eq(accounts.id, id)));
+        .from(categories)
+        .where(and(eq(categories.userId, "1"), eq(categories.id, id)));
       if (!data) {
         return c.json({ error: "Not found" }, 404);
       }
@@ -62,7 +62,7 @@ const app = new Hono()
     "/",
     zValidator(
       "json",
-      insertAccountSchema.pick({
+      insertCategorySchema.pick({
         name: true,
       })
     ),
@@ -71,7 +71,7 @@ const app = new Hono()
       const values = c.req.valid("json");
       // if(!auth) {return c.json({error:"Unauthorized"},401)}
       const [data] = await db
-        .insert(accounts)
+        .insert(categories)
         .values({
           id: uuidv4(),
           userId: "1",
@@ -101,10 +101,10 @@ const app = new Hono()
       */
 
       const data = await db
-        .delete(accounts)
-        .where(and(eq(accounts.userId, "1"), inArray(accounts.id, values.ids)))
+        .delete(categories)
+        .where(and(eq(categories.userId, "1"), inArray(categories.id, values.ids)))
         .returning({
-          id: accounts.id,
+          id: categories.id,
         });
 
       return c.json({ data });
@@ -120,7 +120,7 @@ const app = new Hono()
     ),
     zValidator(
       "json",
-      insertAccountSchema.pick({
+      insertCategorySchema.pick({
         name: true,
       })
     ),
@@ -134,9 +134,9 @@ const app = new Hono()
       }
       // if(!auth) {return c.json({error:"unauthorized",401})}
       const [data] = await db
-        .update(accounts)
+        .update(categories)
         .set(values)
-        .where(and(eq(accounts.userId, "1"), eq(accounts.id, id)))
+        .where(and(eq(categories.userId, "1"), eq(categories.id, id)))
         .returning();
 
       if (!data) {
@@ -163,10 +163,10 @@ const app = new Hono()
       }
       // if(!auth) {return c.json({error:"unauthorized",401})}
       const [data] = await db
-        .delete(accounts)
-        .where(and(eq(accounts.userId, "1"), eq(accounts.id, id)))
+        .delete(categories)
+        .where(and(eq(categories.userId, "1"), eq(categories.id, id)))
         .returning({
-          id: accounts.id,
+          id: categories.id,
         });
 
       if (!data) {
