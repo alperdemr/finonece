@@ -4,7 +4,7 @@ import { eq, and, inArray } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
 
 import { db } from "@/db/drizzle";
-import { accounts, insertAccountSchema } from "@/db/schema";
+import { bankAccounts, insertBankAccountSchema } from "@/db/schema";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -19,10 +19,10 @@ const app = new Hono()
     // with httpexception throw new HTTPException(401,{res:c.json({error:"Unauthorized"},401)})
     const data = await db
       .select({
-        id: accounts.id,
-        name: accounts.name,
+        id: bankAccounts.id,
+        name: bankAccounts.name,
       })
-      .from(accounts);
+      .from(bankAccounts);
     //.where(eq(accounts.userId,auth.userId))
     return c.json({ data });
   })
@@ -47,11 +47,11 @@ const app = new Hono()
     */
       const [data] = await db
         .select({
-          id: accounts.id,
-          name: accounts.name,
+          id: bankAccounts.id,
+          name: bankAccounts.name,
         })
-        .from(accounts)
-        .where(and(eq(accounts.userId, "1"), eq(accounts.id, id)));
+        .from(bankAccounts)
+        .where(and(eq(bankAccounts.userId, "1"), eq(bankAccounts.id, id)));
       if (!data) {
         return c.json({ error: "Not found" }, 404);
       }
@@ -62,7 +62,7 @@ const app = new Hono()
     "/",
     zValidator(
       "json",
-      insertAccountSchema.pick({
+      insertBankAccountSchema.pick({
         name: true,
       })
     ),
@@ -71,7 +71,7 @@ const app = new Hono()
       const values = c.req.valid("json");
       // if(!auth) {return c.json({error:"Unauthorized"},401)}
       const [data] = await db
-        .insert(accounts)
+        .insert(bankAccounts)
         .values({
           id: uuidv4(),
           userId: "1",
@@ -101,10 +101,10 @@ const app = new Hono()
       */
 
       const data = await db
-        .delete(accounts)
-        .where(and(eq(accounts.userId, "1"), inArray(accounts.id, values.ids)))
+        .delete(bankAccounts)
+        .where(and(eq(bankAccounts.userId, "1"), inArray(bankAccounts.id, values.ids)))
         .returning({
-          id: accounts.id,
+          id: bankAccounts.id,
         });
 
       return c.json({ data });
@@ -120,7 +120,7 @@ const app = new Hono()
     ),
     zValidator(
       "json",
-      insertAccountSchema.pick({
+      insertBankAccountSchema.pick({
         name: true,
       })
     ),
@@ -134,9 +134,9 @@ const app = new Hono()
       }
       // if(!auth) {return c.json({error:"unauthorized",401})}
       const [data] = await db
-        .update(accounts)
+        .update(bankAccounts)
         .set(values)
-        .where(and(eq(accounts.userId, "1"), eq(accounts.id, id)))
+        .where(and(eq(bankAccounts.userId, "1"), eq(bankAccounts.id, id)))
         .returning();
 
       if (!data) {
@@ -163,10 +163,10 @@ const app = new Hono()
       }
       // if(!auth) {return c.json({error:"unauthorized",401})}
       const [data] = await db
-        .delete(accounts)
-        .where(and(eq(accounts.userId, "1"), eq(accounts.id, id)))
+        .delete(bankAccounts)
+        .where(and(eq(bankAccounts.userId, "1"), eq(bankAccounts.id, id)))
         .returning({
-          id: accounts.id,
+          id: bankAccounts.id,
         });
 
       if (!data) {

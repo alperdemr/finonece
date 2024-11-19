@@ -5,7 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { insertAccountSchema } from "@/db/schema";
+import { insertBankAccountSchema } from "@/db/schema";
 import {
   Form,
   FormControl,
@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const formSchema = insertAccountSchema.pick({
+const formSchema = insertBankAccountSchema.pick({
   name: true,
 });
 
