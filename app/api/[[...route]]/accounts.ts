@@ -16,7 +16,6 @@ import { v4 as uuidv4 } from "uuid";
 const app = new Hono()
   .get("/", verifyAuth(), async (c) => {
     const auth = c.get("authUser");
-    console.log(auth)
     if (!auth.token?.id) {
       return c.json({ error: "Unauthorized" }, 401);
     }
@@ -31,6 +30,7 @@ const app = new Hono()
   })
   .get(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
@@ -39,22 +39,22 @@ const app = new Hono()
     ),
     // add auth
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
+      if(!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
       const { id } = c.req.valid("param");
       if (!id) {
         return c.json({ error: "Missing id" }, 400);
       }
-      /* if(!auth.userId) {
-    return c.json({error:"Unauthorized"},401)
-  }
-    */
+
       const [data] = await db
         .select({
           id: bankAccounts.id,
           name: bankAccounts.name,
         })
         .from(bankAccounts)
-        .where(and(eq(bankAccounts.userId, "1"), eq(bankAccounts.id, id)));
+        .where(and(eq(bankAccounts.userId, auth.token.id), eq(bankAccounts.id, id)));
       if (!data) {
         return c.json({ error: "Not found" }, 404);
       }
@@ -63,6 +63,7 @@ const app = new Hono()
   )
   .post(
     "/",
+    verifyAuth(),
     zValidator(
       "json",
       insertBankAccountSchema.pick({
@@ -70,14 +71,16 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      // implement auth
+      const auth = c.get("authUser");
       const values = c.req.valid("json");
-      // if(!auth) {return c.json({error:"Unauthorized"},401)}
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
       const [data] = await db
         .insert(bankAccounts)
         .values({
           id: uuidv4(),
-          userId: "1",
+          userId: auth.token.id,
           ...values,
         })
         .returning();
@@ -86,6 +89,7 @@ const app = new Hono()
   )
   .post(
     "/bulk-delete",
+    verifyAuth(),
     zValidator(
       "json",
       // add middleware
@@ -94,20 +98,20 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
+
 
       const values = c.req.valid("json");
 
-      /* if(!auth.userId) {
-      return c.json({error:"Unauthorized"},401)}
-      
-      */
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
 
       const data = await db
         .delete(bankAccounts)
         .where(
           and(
-            eq(bankAccounts.userId, "1"),
+            eq(bankAccounts.userId, auth.token.id),
             inArray(bankAccounts.id, values.ids)
           )
         )

@@ -1,4 +1,4 @@
-import { Hono,Context } from "hono";
+import { Hono, Context } from "hono";
 import { handle } from "hono/vercel";
 import { AuthConfig, initAuthConfig } from "@hono/auth-js";
 
@@ -9,7 +9,6 @@ import accounts from "./accounts";
 import categories from "./categories";
 //import transactions from "./transactions"
 
-
 export const runtime = "nodejs";
 
 function getAuthConfig(c: Context): AuthConfig {
@@ -19,12 +18,9 @@ function getAuthConfig(c: Context): AuthConfig {
   };
 }
 
-
-
 const app = new Hono().basePath("/api");
 
 app.use("*", initAuthConfig(getAuthConfig));
-
 
 // app.onError((err, c) => {
 //   if (err instanceof HTTPException) {
@@ -32,6 +28,9 @@ app.use("*", initAuthConfig(getAuthConfig));
 //   }
 //   return c.json({ error: "Internal error" },500);
 // });
+
+
+
 
 const routes = app
   .route("/users", users)
