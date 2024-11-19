@@ -1,6 +1,6 @@
 import HeaderLogo from "@/components/header-logo";
 import Navigation from "@/components/navigation";
-import UserButton from "@/components/user-button";
+import UserButton from "@/features/auth/components/user-button";
 import WelcomeMessage from "@/components/welcome-message";
 
 const Header = () => {
