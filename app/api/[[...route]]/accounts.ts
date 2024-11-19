@@ -2,6 +2,7 @@ import { z } from "zod";
 import { Hono } from "hono";
 import { eq, and, inArray } from "drizzle-orm";
 import { zValidator } from "@hono/zod-validator";
+import { verifyAuth } from "@hono/auth-js";
 
 import { db } from "@/db/drizzle";
 import { bankAccounts, insertBankAccountSchema } from "@/db/schema";
@@ -13,10 +14,12 @@ import { v4 as uuidv4 } from "uuid";
 // add auth for get accounts,
 
 const app = new Hono()
-  .get("/", async (c) => {
-    //const auth = getAuth(c)
-    // if(!auth) {return c.json({error:"unauthorized",401})}
-    // with httpexception throw new HTTPException(401,{res:c.json({error:"Unauthorized"},401)})
+  .get("/", verifyAuth(), async (c) => {
+    const auth = c.get("authUser");
+    console.log(auth)
+    if (!auth.token?.id) {
+      return c.json({ error: "Unauthorized" }, 401);
+    }
     const data = await db
       .select({
         id: bankAccounts.id,
@@ -102,7 +105,12 @@ const app = new Hono()
 
       const data = await db
         .delete(bankAccounts)
-        .where(and(eq(bankAccounts.userId, "1"), inArray(bankAccounts.id, values.ids)))
+        .where(
+          and(
+            eq(bankAccounts.userId, "1"),
+            inArray(bankAccounts.id, values.ids)
+          )
+        )
         .returning({
           id: bankAccounts.id,
         });

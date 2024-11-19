@@ -12,9 +12,9 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@auth/core": "^0.37.4",
-    "@auth/drizzle-adapter": "^1.7.4",
-    "@hono/auth-js": "^1.0.15",
+    "@auth/core": "0.34.1",
+    "@auth/drizzle-adapter": "1.4.1",
+    "@hono/auth-js": "1.0.10",
     "@hono/zod-validator": "^0.4.1",
     "@hookform/resolvers": "^3.9.1",
     "@neondatabase/serverless": "^0.10.3",
