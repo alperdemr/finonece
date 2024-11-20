@@ -1,199 +1,310 @@
-// import { z } from "zod";
-// import { Hono } from "hono";
-// import { parse, subDays } from "date-fns";
-// import { eq, and, inArray } from "drizzle-orm";
-// import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+import { Hono } from "hono";
+import { parse, subDays } from "date-fns";
+import { eq, and, inArray, gte, lte, desc, sql } from "drizzle-orm";
+import { zValidator } from "@hono/zod-validator";
 
-// import { db } from "@/db/drizzle";
-// import { transactions, insertTransactionSchema } from "@/db/schema";
+import { db } from "@/db/drizzle";
+import {
+  transactions,
+  insertTransactionSchema,
+  categories,
+  bankAccounts,
+} from "@/db/schema";
 
-// import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
-// //import { HTTPException } from "hono/http-exception";
+import { verifyAuth } from "@hono/auth-js";
 
-// // add auth for get categories,
+//import { HTTPException } from "hono/http-exception";
 
-// const app = new Hono()
-//   .get(
-//     "/",
-//     zValidator(
-//       "query",
-//       z.object({
-//         from: z.string().optional(),
-//         to: z.string().optional(),
-//         accountId: z.string().optional(),
-//       })
-//     ),
-//     async (c) => {
-//       //const auth = getAuth(c)
-//       const { from, to, accountId } = c.req.valid("query");
-//       // if(!auth) {return c.json({error:"unauthorized",401})}
-//       // with httpexception throw new HTTPException(401,{res:c.json({error:"Unauthorized"},401)})
-//       const defaultTo = new Date();
-//       const defaultFrom = subDays(defaultTo, 30);
+// add auth for get categories,
 
-//       const startDate = from ? parse()
-//       const data = await db
-//         .select({
-//           id: categories.id,
-//           name: categories.name,
-//         })
-//         .from(categories);
-//       //.where(eq(accounts.userId,auth.userId))
-//       return c.json({ data });
-//     }
-//   )
-//   .get(
-//     "/:id",
-//     zValidator(
-//       "param",
-//       z.object({
-//         id: z.string().optional(),
-//       })
-//     ),
-//     // add auth
-//     async (c) => {
-//       //const auth = getAuth(c)
-//       const { id } = c.req.valid("param");
-//       if (!id) {
-//         return c.json({ error: "Missing id" }, 400);
-//       }
-//       /* if(!auth.userId) {
-//     return c.json({error:"Unauthorized"},401)
-//   }
-//     */
-//       const [data] = await db
-//         .select({
-//           id: categories.id,
-//           name: categories.name,
-//         })
-//         .from(categories)
-//         .where(and(eq(categories.userId, "1"), eq(categories.id, id)));
-//       if (!data) {
-//         return c.json({ error: "Not found" }, 404);
-//       }
-//       return c.json({ data });
-//     }
-//   )
-//   .post(
-//     "/",
-//     zValidator(
-//       "json",
-//       insertCategorySchema.pick({
-//         name: true,
-//       })
-//     ),
-//     async (c) => {
-//       // implement auth
-//       const values = c.req.valid("json");
-//       // if(!auth) {return c.json({error:"Unauthorized"},401)}
-//       const [data] = await db
-//         .insert(categories)
-//         .values({
-//           id: uuidv4(),
-//           userId: "1",
-//           ...values,
-//         })
-//         .returning();
-//       return c.json({ data });
-//     }
-//   )
-//   .post(
-//     "/bulk-delete",
-//     zValidator(
-//       "json",
-//       // add middleware
-//       z.object({
-//         ids: z.array(z.string()),
-//       })
-//     ),
-//     async (c) => {
-//       //const auth = getAuth(c)
+const app = new Hono()
+  .get(
+    "/",
+    verifyAuth(),
+    zValidator(
+      "query",
+      z.object({
+        from: z.string().optional(),
+        to: z.string().optional(),
+        accountId: z.string().optional(),
+      })
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
+      const { from, to, accountId } = c.req.valid("query");
+      if (!auth.token?.id) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
 
-//       const values = c.req.valid("json");
+      const defaultTo = new Date();
+      const defaultFrom = subDays(defaultTo, 30);
 
-//       /* if(!auth.userId) {
-//       return c.json({error:"Unauthorized"},401)}
-      
-//       */
+      const startDate = from
+        ? parse(from, "yyyy-MM-dd", new Date())
+        : defaultFrom;
 
-//       const data = await db
-//         .delete(categories)
-//         .where(
-//           and(eq(categories.userId, "1"), inArray(categories.id, values.ids))
-//         )
-//         .returning({
-//           id: categories.id,
-//         });
+      const endDate = from
+        ? parse(from, "yyyy-MM-dd", new Date())
+        : defaultFrom;
 
-//       return c.json({ data });
-//     }
-//   )
-//   .patch(
-//     "/:id",
-//     zValidator(
-//       "param",
-//       z.object({
-//         id: z.string().optional(),
-//       })
-//     ),
-//     zValidator(
-//       "json",
-//       insertCategorySchema.pick({
-//         name: true,
-//       })
-//     ),
-//     async (c) => {
-//       //const auth = getAuth(c)
-//       const { id } = c.req.valid("param");
-//       const values = c.req.valid("json");
+      const data = await db
+        .select({
+          id: transactions.id,
+          date: transactions.date,
+          category: categories.name,
+          categoryId: transactions.categoryId,
+          payee: transactions.payee,
+          amount: transactions.amount,
+          notes: transactions.notes,
+          bankAccount: bankAccounts.name,
+          accountId: transactions.accountId,
+        })
+        .from(transactions)
+        .innerJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+        .leftJoin(categories, eq(transactions.categoryId, categories.id))
+        .where(
+          and(
+            accountId ? eq(transactions.accountId, accountId) : undefined,
+            eq(bankAccounts.userId, auth.token.id),
+            gte(transactions.date, startDate),
+            lte(transactions.date, endDate)
+          )
+        )
+        .orderBy(desc(transactions.date));
+      return c.json({ data });
+    }
+  )
+  .get(
+    "/:id",
+    verifyAuth(),
+    zValidator(
+      "param",
+      z.object({
+        id: z.string().optional(),
+      })
+    ),
+    // add auth
+    async (c) => {
+      const auth = c.get("authUser");
+      const { id } = c.req.valid("param");
+      if (!id) {
+        return c.json({ error: "Missing id" }, 400);
+      }
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
 
-//       if (!id) {
-//         return c.json({ error: "Missing id" }, 400);
-//       }
-//       // if(!auth) {return c.json({error:"unauthorized",401})}
-//       const [data] = await db
-//         .update(categories)
-//         .set(values)
-//         .where(and(eq(categories.userId, "1"), eq(categories.id, id)))
-//         .returning();
+      const [data] = await db
+        .select({
+          id: transactions.id,
+          date: transactions.date,
+          categoryId: transactions.categoryId,
+          payee: transactions.payee,
+          amount: transactions.amount,
+          notes: transactions.notes,
+          accountId: transactions.accountId,
+        })
+        .from(transactions)
+        .innerJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+        .where(
+          and(eq(transactions.id, id), eq(bankAccounts.userId, auth.token.id))
+        );
+      if (!data) {
+        return c.json({ error: "Not found" }, 404);
+      }
+      return c.json({ data });
+    }
+  )
+  .post(
+    "/",
+    zValidator(
+      "json",
+      insertTransactionSchema.omit({
+        id: true,
+      })
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
+      const values = c.req.valid("json");
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+      const [data] = await db
+        .insert(transactions)
+        .values({
+          id: uuidv4(),
+          ...values,
+        })
+        .returning();
+      return c.json({ data });
+    }
+  )
+  .post(
+    "/bulk-delete",
+    verifyAuth(),
+    zValidator(
+      "json",
+      z.object({
+        ids: z.array(z.string()),
+      })
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
 
-//       if (!data) {
-//         return c.json({ error: "Not found" }, 404);
-//       }
+      const values = c.req.valid("json");
 
-//       return c.json({ data });
-//     }
-//   )
-//   .delete(
-//     "/:id",
-//     zValidator(
-//       "param",
-//       z.object({
-//         id: z.string().optional(),
-//       })
-//     ),
-//     async (c) => {
-//       //const auth = getAuth(c)
-//       const { id } = c.req.valid("param");
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
 
-//       if (!id) {
-//         return c.json({ error: "Missing id" }, 400);
-//       }
-//       // if(!auth) {return c.json({error:"unauthorized",401})}
-//       const [data] = await db
-//         .delete(categories)
-//         .where(and(eq(categories.userId, "1"), eq(categories.id, id)))
-//         .returning({
-//           id: categories.id,
-//         });
+      const transactionsToDelete = db.$with("transactions_to_delete").as(
+        db
+          .select({
+            id: transactions.id,
+          })
+          .from(transactions)
+          .innerJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+          .where(
+            and(
+              inArray(transactions.id, values.ids),
+              eq(bankAccounts.userId, auth.token.id)
+            )
+          )
+      );
 
-//       if (!data) {
-//         return c.json({ error: "Not found" }, 404);
-//       }
+      const data = await db
+        .with(transactionsToDelete)
+        .delete(transactions)
+        .where(
+          inArray(
+            transactions.id,
+            sql`(select id from ${transactionsToDelete})`
+          )
+        )
+        .returning({
+          id: transactions.id,
+        });
 
-//       return c.json({ data });
-//     }
-//   );
+      return c.json({ data });
+    }
+  )
+  .patch(
+    "/:id",
+    verifyAuth(),
+    zValidator(
+      "param",
+      z.object({
+        id: z.string().optional(),
+      })
+    ),
+    zValidator(
+      "json",
+      insertTransactionSchema.omit({
+        id: true,
+      })
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
+      const { id } = c.req.valid("param");
+      const values = c.req.valid("json");
 
-// export default app;
+      if (!id) {
+        return c.json({ error: "Missing id" }, 400);
+      }
+      if (!auth.token?.id) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
+
+      const transactionsToUpdate = db.$with("transactions_to_update").as(
+        db
+          .select({
+            id: transactions.id,
+          })
+          .from(transactions)
+          .innerJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+          .where(
+            and(
+              eq(transactions.id, id),
+              eq(bankAccounts.userId, auth.token?.id)
+            )
+          )
+      );
+
+      const [data] = await db
+        .with(transactionsToUpdate)
+        .update(transactions)
+        .set(values)
+        .where(
+          inArray(
+            transactions.id,
+            sql`(select id from ${transactionsToUpdate})`
+          )
+        )
+        .returning();
+
+      if (!data) {
+        return c.json({ error: "Not found" }, 404);
+      }
+
+      return c.json({ data });
+    }
+  )
+  .delete(
+    "/:id",
+    zValidator(
+      "param",
+      z.object({
+        id: z.string().optional(),
+      })
+    ),
+    async (c) => {
+      const auth = c.get("authUser");
+      const { id } = c.req.valid("param");
+
+      if (!id) {
+        return c.json({ error: "Missing id" }, 400);
+      }
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
+      const transactionsToDelete = db.$with("transactions_to_delete").as(
+        db
+          .select({
+            id: transactions.id,
+          })
+          .from(transactions)
+          .innerJoin(bankAccounts, eq(transactions.accountId, bankAccounts.id))
+          .where(
+            and(
+              eq(transactions.id, id),
+              eq(bankAccounts.userId, auth.token?.id)
+            )
+          )
+      );
+
+      const [data] = await db
+        .with(transactionsToDelete)
+        .delete(transactions)
+        .where(
+          inArray(
+            transactions.id,
+            sql`(select id from ${transactionsToDelete})`
+          )
+        )
+        .returning({
+          id: transactions.id,
+        });
+
+      if (!data) {
+        return c.json({ error: "Not found" }, 404);
+      }
+
+      return c.json({ data });
+    }
+  );
+
+export default app;
