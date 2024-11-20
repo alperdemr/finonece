@@ -74,6 +74,9 @@ const app = new Hono()
           )
         )
         .orderBy(desc(transactions.date));
+      if (!data) {
+        return c.json({ error: "No data" }, 400);
+      }
       return c.json({ data });
     }
   )
@@ -120,6 +123,7 @@ const app = new Hono()
   )
   .post(
     "/",
+    verifyAuth(),
     zValidator(
       "json",
       insertTransactionSchema.omit({

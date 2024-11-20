@@ -7,6 +7,7 @@ import { db } from "@/db/drizzle";
 import { categories, insertCategorySchema } from "@/db/schema";
 
 import { v4 as uuidv4 } from "uuid";
+import { verifyAuth } from "@hono/auth-js";
 
 //import { HTTPException } from "hono/http-exception";
 
@@ -60,6 +61,7 @@ const app = new Hono()
   )
   .post(
     "/",
+    verifyAuth(),
     zValidator(
       "json",
       insertCategorySchema.pick({
@@ -67,14 +69,16 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      // implement auth
+      const auth = c.get("authUser");
       const values = c.req.valid("json");
-      // if(!auth) {return c.json({error:"Unauthorized"},401)}
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
       const [data] = await db
         .insert(categories)
         .values({
           id: uuidv4(),
-          userId: "1",
+          userId: auth.token.id,
           ...values,
         })
         .returning();
@@ -102,7 +106,9 @@ const app = new Hono()
 
       const data = await db
         .delete(categories)
-        .where(and(eq(categories.userId, "1"), inArray(categories.id, values.ids)))
+        .where(
+          and(eq(categories.userId, "1"), inArray(categories.id, values.ids))
+        )
         .returning({
           id: categories.id,
         });
