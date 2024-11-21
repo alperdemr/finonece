@@ -46,9 +46,9 @@ const app = new Hono()
         ? parse(from, "yyyy-MM-dd", new Date())
         : defaultFrom;
 
-      const endDate = from
-        ? parse(from, "yyyy-MM-dd", new Date())
-        : defaultFrom;
+      const endDate = to
+        ? parse(to, "yyyy-MM-dd", new Date())
+        : defaultTo;
 
       const data = await db
         .select({
@@ -74,7 +74,7 @@ const app = new Hono()
           )
         )
         .orderBy(desc(transactions.date));
-      if (!data) {
+      if (!data || data.length === 0) {
         return c.json({ error: "No data" }, 400);
       }
       return c.json({ data });
