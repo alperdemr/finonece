@@ -49,7 +49,7 @@ type Props = {
   onCreateCategory: (name: string) => void;
 };
 
-const TransactionForm = ({
+export const TransactionForm = ({
   id,
   defaultValues,
   onSubmit,
@@ -142,9 +142,10 @@ const TransactionForm = ({
               <FormLabel>Payee</FormLabel>
               <FormControl>
                 <Input
-                  {...field}
                   disabled={disabled}
                   placeholder="Add a payee"
+                  {...field}
+
                 />
               </FormControl>
             </FormItem>
@@ -184,7 +185,7 @@ const TransactionForm = ({
           )}
         />
         <Button className=" w-full" disabled={disabled}>
-          {id ? "Save changes" : "Create account"}
+          {id ? "Save changes" : "Create transaction"}
         </Button>
         {!!id && (
           <Button
@@ -195,7 +196,7 @@ const TransactionForm = ({
             variant="outline"
           >
             <Trash className=" size-4 mr-2" />
-            Delete account
+            Delete transaction
           </Button>
         )}
       </form>
@@ -203,4 +204,3 @@ const TransactionForm = ({
   );
 };
 
-export default TransactionForm;

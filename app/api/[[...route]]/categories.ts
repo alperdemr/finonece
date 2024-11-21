@@ -14,10 +14,11 @@ import { verifyAuth } from "@hono/auth-js";
 // add auth for get categories,
 
 const app = new Hono()
-  .get("/", async (c) => {
-    //const auth = getAuth(c)
-    // if(!auth) {return c.json({error:"unauthorized",401})}
-    // with httpexception throw new HTTPException(401,{res:c.json({error:"Unauthorized"},401)})
+  .get("/", verifyAuth(), async (c) => {
+    const auth = c.get("authUser");
+    if (!auth.token?.id) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
     const data = await db
       .select({
         id: categories.id,
@@ -29,6 +30,7 @@ const app = new Hono()
   })
   .get(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
@@ -37,22 +39,24 @@ const app = new Hono()
     ),
     // add auth
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
       const { id } = c.req.valid("param");
       if (!id) {
         return c.json({ error: "Missing id" }, 400);
       }
-      /* if(!auth.userId) {
-    return c.json({error:"Unauthorized"},401)
-  }
-    */
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
+
       const [data] = await db
         .select({
           id: categories.id,
           name: categories.name,
         })
         .from(categories)
-        .where(and(eq(categories.userId, "1"), eq(categories.id, id)));
+        .where(
+          and(eq(categories.userId, auth.token.id), eq(categories.id, id))
+        );
       if (!data) {
         return c.json({ error: "Not found" }, 404);
       }
@@ -87,27 +91,29 @@ const app = new Hono()
   )
   .post(
     "/bulk-delete",
+    verifyAuth(),
     zValidator(
       "json",
-      // add middleware
       z.object({
         ids: z.array(z.string()),
       })
     ),
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
 
       const values = c.req.valid("json");
 
-      /* if(!auth.userId) {
-      return c.json({error:"Unauthorized"},401)}
-      
-      */
+      if (!auth.token?.id) {
+        return c.json({ error: "Unauthorized" }, 401);
+      }
 
       const data = await db
         .delete(categories)
         .where(
-          and(eq(categories.userId, "1"), inArray(categories.id, values.ids))
+          and(
+            eq(categories.userId, auth.token.id),
+            inArray(categories.id, values.ids)
+          )
         )
         .returning({
           id: categories.id,
@@ -118,6 +124,7 @@ const app = new Hono()
   )
   .patch(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
@@ -131,18 +138,20 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
       const { id } = c.req.valid("param");
       const values = c.req.valid("json");
 
       if (!id) {
         return c.json({ error: "Missing id" }, 400);
       }
-      // if(!auth) {return c.json({error:"unauthorized",401})}
+      if (!auth.token?.id) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
       const [data] = await db
         .update(categories)
         .set(values)
-        .where(and(eq(categories.userId, "1"), eq(categories.id, id)))
+        .where(and(eq(categories.userId, auth.token.id), eq(categories.id, id)))
         .returning();
 
       if (!data) {
@@ -154,6 +163,7 @@ const app = new Hono()
   )
   .delete(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
@@ -161,16 +171,18 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
       const { id } = c.req.valid("param");
 
       if (!id) {
         return c.json({ error: "Missing id" }, 400);
       }
-      // if(!auth) {return c.json({error:"unauthorized",401})}
+      if (!auth.token?.id) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
       const [data] = await db
         .delete(categories)
-        .where(and(eq(categories.userId, "1"), eq(categories.id, id)))
+        .where(and(eq(categories.userId, auth.token.id), eq(categories.id, id)))
         .returning({
           id: categories.id,
         });

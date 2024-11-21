@@ -18,7 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import TransactionForm from "@/features/transactions/components/transaction-form";
+import { TransactionForm } from "@/features/transactions/components/transaction-form";
 
 const formSchema = insertTransactionSchema.omit({
   id: true,
@@ -44,6 +44,11 @@ const NewTransactionSheet = () => {
 
   const accountQuery = useGetAccounts();
   const accountMutation = useCreateAccount();
+  const onCreateAccount = (name: string) => {
+    accountMutation.mutate({
+      name,
+    });
+  };
   const accountOptions = (accountQuery.data ?? []).map((account) => ({
     label: account.name,
     value: account.id,
@@ -64,7 +69,6 @@ const NewTransactionSheet = () => {
     });
   };
 
-  const onCreateAccount = () => {};
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>

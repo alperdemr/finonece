@@ -40,7 +40,7 @@ const app = new Hono()
     // add auth
     async (c) => {
       const auth = c.get("authUser");
-      if(!auth.token?.id) {
+      if (!auth.token?.id) {
         return c.json({ error: "Unauthorized" }, 401);
       }
       const { id } = c.req.valid("param");
@@ -54,7 +54,9 @@ const app = new Hono()
           name: bankAccounts.name,
         })
         .from(bankAccounts)
-        .where(and(eq(bankAccounts.userId, auth.token.id), eq(bankAccounts.id, id)));
+        .where(
+          and(eq(bankAccounts.userId, auth.token.id), eq(bankAccounts.id, id))
+        );
       if (!data) {
         return c.json({ error: "Not found" }, 404);
       }
@@ -100,7 +102,6 @@ const app = new Hono()
     async (c) => {
       const auth = c.get("authUser");
 
-
       const values = c.req.valid("json");
 
       if (!auth.token?.id) {
@@ -124,6 +125,7 @@ const app = new Hono()
   )
   .patch(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
@@ -137,18 +139,20 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
       const { id } = c.req.valid("param");
       const values = c.req.valid("json");
 
       if (!id) {
         return c.json({ error: "Missing id" }, 400);
       }
-      // if(!auth) {return c.json({error:"unauthorized",401})}
+      if (!auth.token?.id) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
       const [data] = await db
         .update(bankAccounts)
         .set(values)
-        .where(and(eq(bankAccounts.userId, "1"), eq(bankAccounts.id, id)))
+        .where(and(eq(bankAccounts.userId, auth.token.id), eq(bankAccounts.id, id)))
         .returning();
 
       if (!data) {
@@ -160,6 +164,7 @@ const app = new Hono()
   )
   .delete(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
@@ -167,16 +172,18 @@ const app = new Hono()
       })
     ),
     async (c) => {
-      //const auth = getAuth(c)
+      const auth = c.get("authUser");
       const { id } = c.req.valid("param");
 
       if (!id) {
         return c.json({ error: "Missing id" }, 400);
       }
-      // if(!auth) {return c.json({error:"unauthorized",401})}
+      if (!auth.token?.id) {
+        return c.json({ error: "unauthorized" }, 401);
+      }
       const [data] = await db
         .delete(bankAccounts)
-        .where(and(eq(bankAccounts.userId, "1"), eq(bankAccounts.id, id)))
+        .where(and(eq(bankAccounts.userId, auth.token.id), eq(bankAccounts.id, id)))
         .returning({
           id: bankAccounts.id,
         });

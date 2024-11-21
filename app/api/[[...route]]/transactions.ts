@@ -46,9 +46,7 @@ const app = new Hono()
         ? parse(from, "yyyy-MM-dd", new Date())
         : defaultFrom;
 
-      const endDate = to
-        ? parse(to, "yyyy-MM-dd", new Date())
-        : defaultTo;
+      const endDate = to ? parse(to, "yyyy-MM-dd", new Date()) : defaultTo;
 
       const data = await db
         .select({
@@ -290,6 +288,7 @@ const app = new Hono()
   )
   .delete(
     "/:id",
+    verifyAuth(),
     zValidator(
       "param",
       z.object({
