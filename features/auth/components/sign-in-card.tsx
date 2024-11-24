@@ -34,7 +34,7 @@ const SignInCard = () => {
   };
 
   return (
-    <Card className=" p-8">
+    <Card className=" p-4">
       <CardHeader className="px-0 pt-0">
         <CardTitle>Login to continue</CardTitle>
         <CardDescription>
@@ -48,7 +48,7 @@ const SignInCard = () => {
         </div>
       )}
       <CardContent className="space-y-5 px-0 pb-0">
-        <form onSubmit={onCredentialSignIn} className="space-y-2.5">
+        <form onSubmit={onCredentialSignIn} className="space-y-4">
           <Input
             value={email}
             onChange={(e) => setEmail(e.target.value)}
